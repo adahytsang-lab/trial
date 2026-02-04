@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh-HK">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>嘉年華排隊系統</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --color-primary: #20B2AA;
+            --color-primary-light: #5FD3D0;
+            --color-primary-dark: #0A7A71;
+            --color-accent-yellow: #FFD700;
+            --color-accent-pink: #FF69B4;
+            --color-accent-purple: #DA70D6;
+            --color-accent-orange: #FF8C00;
+            --color-bg: #F0FFFE;
+            --color-text: #1A3A3A;
+            --color-border: #A8DBDB;
+            --color-success: #32CD32;
+            --color-warning: #FFA500;
+        }
+
+        body {
+            font-family: 'Arial', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, var(--color-primary-light) 0%, #E0F7F6 100%);
+            color: var(--color-text);
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* ===== 主要模式切換 ===== */
+        .mode-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 50px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+        }
+
+        .toggle-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            background: var(--color-primary-light);
+            color: white;
+            border: 2px solid transparent;
+        }
+
+        .toggle-btn.active {
+            background: var(--color-primary-dark);
+            transform: scale(1.05);
+        }
+
+        .toggle-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* ===== 隱藏區域 ===== */
+        .mode-section {
+            display: none;
+        }
+
+        .mode-section.active {
+            display: block;
+        }
+
+        /* ===== 客戶模式 ===== */
+        .customer-mode {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .customer-card {
+            background: white;
+            border-radius: 30px;
+            padding: 60px 40px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            max-width: 500px;
+            width: 100%;
+            border: 5px solid var(--color-accent-pink);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .customer-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(32, 178, 170, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 6s ease-in-out infinite;
+        }
+
+        .customer-card::after {
+            content: '';
+            position: absolute;
+            bottom: -30%;
+            left: -30%;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite reverse;
+        }
+
+        .customer-card > * {
+            position: relative;
+            z-index: 1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(20px); }
+        }
+
+        .customer-title {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: var(--color-primary-dark);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .customer-subtitle {
+            font-size: 1.2em;
+            color: var(--color-text);
+            margin-bottom: 40px;
+            opacity: 0.8;
+        }
+
+        .queue-info-container {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 40px;
+            color: white;
+            box-shadow: 0 5px 20px rgba(32, 178, 170, 0.3);
+        }
+
+        .queue-number {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin-bottom: 15px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .queue-label {
+            font-size: 1.1em;
+            opacity: 0.95;
+            margin-bottom: 10px;
+        }
+
+        .waiting-info {
+            font-size: 1.3em;
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .join-btn, .check-btn, .call-btn, .finish-btn {
+            background: linear-gradient(135deg, var(--color-accent-pink) 0%, var(--color-accent-purple) 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: bold;
+            box-shadow: 0 4px 15px rgba(255, 105, 180, 0.3);
+            margin: 10px 5px;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+
+        .join-btn:hover, .check-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 105, 180, 0.4);
+        }
+
+        .call-btn {
+            background: linear-gradient(135deg, var(--color-accent-orange) 0%, var(--color-accent-pink) 100%);
+            padding: 20px 50px;
+            font-size: 1.3em;
+            width: auto;
+        }
+
+        .call-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .finish-btn {
+            background: var(--color-success);
+            width: auto;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-size: 0.9em;
+            font-weight: bold;
+            margin-top: 10px;
+            background: var(--color-accent-yellow);
+            color: var(--color-text);
+        }
+
+        .status-badge.called {
+            background: var(--color-accent-pink);
+            color: white;
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        /* ===== 即時排隊顯示屏 ===== */
+        .display-screen {
+            background: linear-gradient(135deg, var(--color-primary-dark) 0%, #0B5B54 100%);
+            color: white;
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            text-align: center;
+        }
+
+        .now-serving {
+            font-size: 3em;
+            font-weight: bold;
+            margin-bottom: 20px;
+            animation: pulse 2s ease-in-out infinite;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .current-number {
+            font-size: 4.5em;
+            font-weight: bold;
+            color: var(--color-accent-yellow);
+            text-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+            margin: 20px 0;
+        }
+
+        .next-up {
+            font-size: 1.3em;
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 3px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .next-numbers {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--color-accent-pink);
+            margin-top: 10px;
+        }
+
+        /* ===== 排隊列表 ===== */
+        .queue-list {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .queue-list-title {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: var(--color-primary-dark);
+            margin-bottom: 20px;
+            border-bottom: 3px solid var(--color-primary);
+            padding-bottom: 10px;
+        }
+
+        .queue-item {
+            padding: 15px;
+            border-left: 5px solid var(--color-primary);
+            background: linear-gradient(90deg, rgba(32, 178, 170, 0.05) 0%, transparent 100%);
+            border-radius: 5px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .queue-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 2px 10px rgba(32, 178, 170, 0.2);
+        }
+
+        .queue-item.served {
+            opacity: 0.5;
+            background: linear-gradient(90deg, rgba(200, 200, 200, 0.1) 0%, transparent 100%);
+            border-left-color: var(--color-border);
+        }
+
+        .queue-item-number {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: var(--color-primary-dark);
+            min-width: 50px;
+        }
+
+        .queue-item-info {
+            flex-grow: 1;
+            margin-left: 20px;
+        }
+
+        .queue-item-waiting {
+            color: var(--color-text);
+            opacity: 0.7;
+            font-size: 0.9em;
+        }
+
+        .queue-item-action {
+            display: flex;
+            gap: 10px;
+        }
+
+        .queue-item-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+
+        .call-queue-btn {
+            background: var(--color-accent-pink);
+            color: white;
+        }
+
+        .call-queue-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 2px 10px rgba(255, 105, 180, 0.3);
+        }
+
+        .skip-btn {
+            background: var(--color-accent-orange);
+            color: white;
+        }
+
+        .skip-btn:hover {
+            transform: scale(1.05);
+        }
+
+        /* ===== 管理員介面 ===== */
+        .admin-mode {
+            padding-top: 80px;
+        }
+
+        .admin-header {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .admin-title {
+            font-size: 2em;
+            font-weight: bold;
+            color: var(--color-primary-dark);
+            margin-bottom: 15px;
+        }
+
+        .admin-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(32, 178, 170, 0.3);
+        }
+
+        .stat-number {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+
+        .admin-controls {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .control-group {
+            margin-bottom: 20px;
+        }
+
+        .control-label {
+            font-weight: bold;
+            color: var(--color-primary-dark);
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .reset-btn {
+            background: var(--color-warning);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+
+        .reset-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+        }
+
+        /* ===== 聲音通知 ===== */
+        .sound-toggle {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--color-accent-yellow) 0%, var(--color-accent-orange) 100%);
+            border: none;
+            cursor: pointer;
+            font-size: 1.5em;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+
+        .sound-toggle:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .sound-toggle.off {
+            opacity: 0.5;
+        }
+
+        /* ===== 響應式設計 ===== */
+        @media (max-width: 768px) {
+            .mode-toggle {
+                position: static;
+                margin-bottom: 20px;
+                justify-content: center;
+            }
+
+            .customer-card {
+                padding: 40px 25px;
+            }
+
+            .customer-title {
+                font-size: 2em;
+            }
+
+            .queue-number {
+                font-size: 2.5em;
+            }
+
+            .current-number {
+                font-size: 3em;
+            }
+
+            .admin-stats {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .queue-item {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .queue-item-action {
+                width: 100%;
+                margin-top: 10px;
+            }
+
+            .queue-item-btn {
+                flex: 1;
+            }
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            animation: slideIn 0.3s ease;
+            z-index: 999;
+            border-left: 5px solid var(--color-primary);
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .notification.success {
+            border-left-color: var(--color-success);
+        }
+
+        .notification.warning {
+            border-left-color: var(--color-warning);
+        }
+    </style>
+</head>
+<body>
+    <!-- 模式切換 -->
+    <div class="mode-toggle">
+        <button class="toggle-btn active" onclick="switchMode('customer')">👥 員工取號</button>
+        <button class="toggle-btn" onclick="switchMode('display')">📊 排隊顯示屏</button>
+        <button class="toggle-btn" onclick="switchMode('admin')">⚙️ 管理員</button>
+    </div>
+
+    <!-- 客戶模式 -->
+    <div id="customer" class="mode-section active customer-mode">
+        <div class="customer-card">
+            <h1 class="customer-title">🎉 嘉年華派對</h1>
+            <p class="customer-subtitle">歡迎加入排隊隊伍！</p>
+
+            <div id="notJoined">
+                <p style="margin-bottom: 20px; font-size: 1.1em;">掃描 QR Code 或點擊下方按鈕加入隊伍</p>
+                <button class="join-btn" onclick="joinQueue()">📱 加入隊伍</button>
+            </div>
+
+            <div id="joined" style="display: none;">
+                <div class="queue-info-container">
+                    <div class="queue-label">您的排隊號碼</div>
+                    <div class="queue-number" id="userNumber">-</div>
+                    <div class="queue-label" id="userPosition">第 - 位</div>
+                    <div class="waiting-info">
+                        ⏱️ 估計等候時間: <span id="waitingTime">-</span>
+                    </div>
+                </div>
+                <div id="waitingSection" style="display: none;">
+                    <p style="margin-bottom: 20px; color: var(--color-text); font-size: 1.1em;">🎊 準備好了嗎？</p>
+                    <button class="check-btn" onclick="checkQueue()">查看排隊情況</button>
+                </div>
+                <div id="calledSection" style="display: none;">
+                    <div class="status-badge called">✨ 輪到您了！✨</div>
+                    <p style="margin: 20px 0; font-size: 1.2em; color: var(--color-primary-dark); font-weight: bold;">
+                        請到遊戲站準備！
+                    </p>
+                    <button class="call-btn" onclick="playRing()">🔔 再次播放提示聲</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 排隊顯示屏 -->
+    <div id="display" class="mode-section">
+        <div class="container">
+            <div class="display-screen">
+                <div class="now-serving">現在服務</div>
+                <div class="current-number" id="displayCurrent">-</div>
+                <div class="next-up">下一位</div>
+                <div class="next-numbers" id="displayNext">-</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理員模式 -->
+    <div id="admin" class="mode-section admin-mode">
+        <div class="container">
+            <div class="admin-header">
+                <div class="admin-title">⚙️ 管理員介面</div>
+                <div class="admin-stats">
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalInQueue">0</div>
+                        <div class="stat-label">排隊人數</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="totalServed">0</div>
+                        <div class="stat-label">已服務</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="avgWait">0 分</div>
+                        <div class="stat-label">平均等待</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number" id="nextCalling" id="nextCallingDisplay">-</div>
+                        <div class="stat-label">準備叫號</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-controls">
+                <div class="control-group">
+                    <label class="control-label">🎮 遊戲站管理</label>
+                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                        <button class="call-queue-btn" onclick="callNext()" style="background: var(--color-accent-pink); color: white; border: none; padding: 12px 30px; border-radius: 25px; cursor: pointer; font-weight: bold;">
+                            📢 叫號下一位
+                        </button>
+                        <button class="reset-btn" onclick="resetQueue()" style="background: var(--color-warning);">
+                            🔄 重置系統
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="queue-list">
+                <div class="queue-list-title">📋 排隊隊伍</div>
+                <div id="queueList">
+                    <p style="text-align: center; color: var(--color-text); opacity: 0.6;">暫無排隊人員</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 聲音開關 -->
+    <button class="sound-toggle" onclick="toggleSound()" title="切換聲音">🔔</button>
+
+    <!-- 通知 -->
+    <div id="notification"></div>
+
+    <script>
+        // 資料存儲
+        const queueData = {
+            queue: JSON.parse(localStorage.getItem('queue')) || [],
+            served: JSON.parse(localStorage.getItem('served')) || [],
+            currentCalling: parseInt(localStorage.getItem('currentCalling')) || 0,
+            userNumber: localStorage.getItem('userNumber') || null,
+            soundEnabled: localStorage.getItem('soundEnabled') !== 'false'
+        };
+
+        // 切換模式
+        function switchMode(mode) {
+            document.querySelectorAll('.mode-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(mode).classList.add('active');
+
+            document.querySelectorAll('.toggle-btn').forEach(el => el.classList.remove('active'));
+            event.target.classList.add('active');
+
+            updateAllDisplays();
+        }
+
+        // 加入隊伍
+        function joinQueue() {
+            const queueNumber = Math.max(...queueData.queue.map(q => q.number || 0), queueData.served.length) + 1;
+            const newPerson = {
+                number: queueNumber,
+                joinTime: Date.now(),
+                called: false
+            };
+
+            queueData.queue.push(newPerson);
+            queueData.userNumber = queueNumber;
+
+            saveData();
+            updateCustomerView();
+            updateAdminView();
+            broadcastUpdate();
+
+            showNotification('✅ 成功加入排隊！您的號碼是: ' + queueNumber);
+            playRing();
+        }
+
+        // 查看排隊情況
+        function checkQueue() {
+            updateCustomerView();
+        }
+
+        // 叫號下一位
+        function callNext() {
+            if (queueData.queue.length === 0) {
+                showNotification('⚠️ 沒有人排隊', 'warning');
+                return;
+            }
+
+            const nextPerson = queueData.queue.shift();
+            nextPerson.called = true;
+            nextPerson.calledTime = Date.now();
+            queueData.currentCalling = nextPerson.number;
+            queueData.served.push(nextPerson);
+
+            saveData();
+            updateAllDisplays();
+            broadcastUpdate();
+
+            playCallSound();
+            showNotification('📢 已叫號: ' + nextPerson.number);
+        }
+
+        // 重置系統
+        function resetQueue() {
+            if (confirm('確定要重置整個系統嗎？所有資料將被清除！')) {
+                queueData.queue = [];
+                queueData.served = [];
+                queueData.currentCalling = 0;
+                queueData.userNumber = null;
+
+                saveData();
+                updateAllDisplays();
+                broadcastUpdate();
+
+                showNotification('🔄 系統已重置', 'warning');
+            }
+        }
+
+        // 切換聲音
+        function toggleSound() {
+            queueData.soundEnabled = !queueData.soundEnabled;
+            localStorage.setItem('soundEnabled', queueData.soundEnabled);
+
+            const btn = document.querySelector('.sound-toggle');
+            btn.classList.toggle('off');
+            showNotification(queueData.soundEnabled ? '🔔 已開啟聲音提示' : '🔇 已關閉聲音提示');
+        }
+
+        // 播放提示聲
+        function playRing() {
+            if (!queueData.soundEnabled) return;
+
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.setValueAtTime(1000, audioContext.currentTime);
+            oscillator.frequency.setValueAtTime(500, audioContext.currentTime + 0.1);
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.setValueAtTime(0, audioContext.currentTime + 0.2);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        }
+
+        // 播放叫號聲
+        function playCallSound() {
+            if (!queueData.soundEnabled) return;
+
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const osc = audioContext.createOscillator();
+                    const gain = audioContext.createGain();
+                    osc.connect(gain);
+                    gain.connect(audioContext.destination);
+
+                    osc.frequency.setValueAtTime(800, audioContext.currentTime);
+                    gain.gain.setValueAtTime(0.3, audioContext.currentTime);
+                    gain.gain.setValueAtTime(0, audioContext.currentTime + 0.3);
+
+                    osc.start(audioContext.currentTime);
+                    osc.stop(audioContext.currentTime + 0.3);
+                }, i * 400);
+            }
+        }
+
+        // 更新客戶視圖
+        function updateCustomerView() {
+            const notJoinedEl = document.getElementById('notJoined');
+            const joinedEl = document.getElementById('joined');
+            const userNumberEl = document.getElementById('userNumber');
+            const userPositionEl = document.getElementById('userPosition');
+            const waitingTimeEl = document.getElementById('waitingTime');
+            const waitingSection = document.getElementById('waitingSection');
+            const calledSection = document.getElementById('calledSection');
+
+            if (queueData.userNumber) {
+                notJoinedEl.style.display = 'none';
+                joinedEl.style.display = 'block';
+
+                userNumberEl.textContent = queueData.userNumber;
+
+                const position = queueData.queue.findIndex(q => q.number === queueData.userNumber);
+                const called = queueData.currentCalling === queueData.userNumber;
+
+                if (called) {
+                    waitingSection.style.display = 'none';
+                    calledSection.style.display = 'block';
+                } else if (position >= 0) {
+                    userPositionEl.textContent = '第 ' + (position + 1) + ' 位';
+                    waitingTimeEl.textContent = (position + 1) + ' 分鐘';
+                    waitingSection.style.display = 'block';
+                    calledSection.style.display = 'none';
+                } else {
+                    userPositionEl.textContent = '未知';
+                    waitingTimeEl.textContent = '計算中...';
+                    waitingSection.style.display = 'block';
+                    calledSection.style.display = 'none';
+                }
+            } else {
+                notJoinedEl.style.display = 'block';
+                joinedEl.style.display = 'none';
+            }
+
+            updateDisplayScreen();
+        }
+
+        // 更新顯示屏
+        function updateDisplayScreen() {
+            const currentEl = document.getElementById('displayCurrent');
+            const nextEl = document.getElementById('displayNext');
+
+            currentEl.textContent = queueData.currentCalling || '暫無';
+
+            const nextNumbers = queueData.queue.slice(0, 3).map(q => q.number).join(' / ');
+            nextEl.textContent = nextNumbers || '暫無';
+        }
+
+        // 更新管理員視圖
+        function updateAdminView() {
+            document.getElementById('totalInQueue').textContent = queueData.queue.length;
+            document.getElementById('totalServed').textContent = queueData.served.length;
+            document.getElementById('avgWait').textContent = '1 分';
+            document.getElementById('nextCalling').textContent = queueData.queue[0] ? queueData.queue[0].number : '-';
+
+            const queueListEl = document.getElementById('queueList');
+            if (queueData.queue.length === 0 && queueData.served.length === 0) {
+                queueListEl.innerHTML = '<p style="text-align: center; color: var(--color-text); opacity: 0.6;">暫無排隊人員</p>';
+                return;
+            }
+
+            let html = '';
+
+            // 已被叫號的
+            if (queueData.currentCalling) {
+                const called = queueData.served.find(q => q.number === queueData.currentCalling);
+                if (called) {
+                    html += `
+                        <div class="queue-item served">
+                            <div class="queue-item-number">✓ ${called.number}</div>
+                            <div class="queue-item-info">
+                                <div>已服務</div>
+                                <div class="queue-item-waiting">已完成</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // 等待中的
+            queueData.queue.forEach((person, index) => {
+                html += `
+                    <div class="queue-item">
+                        <div class="queue-item-number">${person.number}</div>
+                        <div class="queue-item-info">
+                            <div>第 ${index + 1} 位</div>
+                            <div class="queue-item-waiting">等待中...</div>
+                        </div>
+                        <div class="queue-item-action">
+                            <button class="call-queue-btn" onclick="callNext()" style="font-size: 0.8em;">叫號</button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            queueListEl.innerHTML = html;
+        }
+
+        // 更新所有顯示
+        function updateAllDisplays() {
+            updateCustomerView();
+            updateAdminView();
+        }
+
+        // 保存資料
+        function saveData() {
+            localStorage.setItem('queue', JSON.stringify(queueData.queue));
+            localStorage.setItem('served', JSON.stringify(queueData.served));
+            localStorage.setItem('currentCalling', queueData.currentCalling);
+            localStorage.setItem('userNumber', queueData.userNumber || '');
+        }
+
+        // 廣播更新（多設備同步）
+        function broadcastUpdate() {
+            // 使用 setInterval 模擬實時更新
+            updateAllDisplays();
+        }
+
+        // 顯示通知
+        function showNotification(message, type = 'success') {
+            const notificationEl = document.getElementById('notification');
+            notificationEl.className = 'notification ' + type;
+            notificationEl.textContent = message;
+            notificationEl.style.display = 'block';
+
+            setTimeout(() => {
+                notificationEl.style.display = 'none';
+            }, 3000);
+        }
+
+        // 初始化
+        function init() {
+            updateAllDisplays();
+
+            if (queueData.soundEnabled) {
+                document.querySelector('.sound-toggle').classList.remove('off');
+            } else {
+                document.querySelector('.sound-toggle').classList.add('off');
+            }
+
+            // 定時更新顯示屏（模擬實時更新）
+            setInterval(updateAllDisplays, 2000);
+        }
+
+        window.addEventListener('load', init);
+
+        // 頁面可見性變化時更新
+        document.addEventListener('visibilitychange', updateAllDisplays);
+    </script>
+</body>
+</html>
