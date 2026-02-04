@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🛒 智能排隊系統 - 零等待購物體驗</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', -apple-system, sans-serif; 
+            background: linear-gradient(135deg, #20B2AA 0%, #48CAE4 50%, #90E0EF 100%); 
+            min-height: 100vh; 
+            color: #2d3748; 
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .hero { 
+            text-align: center; 
+            padding: 60px 20px; 
+            background: rgba(255,255,255,0.95); 
+            border-radius: 30px; 
+            margin-bottom: 40px; 
+            box-shadow: 0 30px 60px rgba(0,0,0,0.15); 
+            animation: fadeInUp 1s ease; 
+        }
+        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        h1 { font-size: 3em; color: #20B2AA; margin-bottom: 20px; font-weight: 800; }
+        .subtitle { font-size: 1.4em; color: #4a5568; margin-bottom: 40px; }
+        .cta-buttons { display: flex; flex-wrap: wrap; gap: 20px; justify-content: center; margin-bottom: 50px; }
+        .btn { 
+            padding: 20px 40px; font-size: 1.3em; border: none; border-radius: 50px; 
+            cursor: pointer; transition: all 0.3s; text-decoration: none; display: inline-block; 
+            font-weight: 600; min-width: 220px; 
+        }
+        .btn-primary { background: linear-gradient(135deg, #20B2AA, #38B2AC); color: white; box-shadow: 0 15px 35px rgba(32,178,170,0.4); }
+        .btn-primary:hover { transform: translateY(-5px); box-shadow: 0 25px 50px rgba(32,178,170,0.6); }
+        .btn-secondary { background: white; color: #20B2AA; border: 3px solid #20B2AA; }
+        .btn-secondary:hover { background: #20B2AA; color: white; }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin: 60px 0; }
+        .feature-card { 
+            background: rgba(255,255,255,0.9); padding: 30px; border-radius: 20px; 
+            text-align: center; box-shadow: 0 15px 30px rgba(0,0,0,0.1); 
+            transition: transform 0.3s; 
+        }
+        .feature-card:hover { transform: translateY(-10px); }
+        .feature-icon { font-size: 4em; margin-bottom: 20px; }
+        .qr-section { 
+            background: linear-gradient(135deg, #20B2AA, #48CAE4); 
+            color: white; padding: 50px 20px; border-radius: 25px; margin: 40px 0; 
+            text-align: center; 
+        }
+        .qr-placeholder { 
+            width: 200px; height: 200px; background: rgba(255,255,255,0.3); 
+            border-radius: 20px; margin: 20px auto; display: flex; align-items: center; 
+            justify-content: center; font-size: 1.2em; backdrop-filter: blur(10px); 
+        }
+        .footer { text-align: center; padding: 40px 20px; color: #4a5568; font-size: 0.9em; }
+        @media (max-width: 768px) { 
+            h1 { font-size: 2em; } 
+            .cta-buttons { flex-direction: column; align-items: center; } 
+            .btn { min-width: 280px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- 英雄區 -->
+        <section class="hero">
+            <h1>🛒 智能排隊系統</h1>
+            <p class="subtitle">掃碼取號，零等待購物！<br>零售新體驗，顧客滿意度 UP 300%</p>
+            <div class="cta-buttons">
+                <a href="queue.html" class="btn btn-primary" target="_blank">🚀 立即加入隊列</a>
+                <a href="#features" class="btn btn-secondary">特色功能</a>
+            </div>
+        </section>
+
+        <!-- QR Code 區 -->
+        <section class="qr-section">
+            <h2>📱 超簡單三步驟</h2>
+            <div class="qr-placeholder">QR Code 位置<br>(用 Canva 生成貼此)</div>
+            <ol style="max-width: 600px; margin: 0 auto; text-align: left; font-size: 1.3em;">
+                <li>掃描 QR Code 或點擊上方連結</li>
+                <li>輸入姓名加入隊列</li>
+                <li>手機實時查看輪到你的通知！</li>
+            </ol>
+        </section>
+
+        <!-- 特色功能 -->
+        <section id="features" class="features">
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>即時同步</h3>
+                <p>多人同時使用，自動同步更新，所有人即時看到最新隊列</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔔</div>
+                <h3>智能提醒</h3>
+                <p>估計等候時間 + 響鈴提示，絕不錯過你的號碼</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📱</div>
+                <h3>手機友好</h3>
+                <p>無需下載 App，掃碼即用，支援所有手機瀏覽器</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">👨‍💼</div>
+                <h3>管理員專區</h3>
+                <p>一鍵叫號、查看統計、清空隊列，店長專屬工具</p>
+            </div>
+        </section>
+
+        <!-- 底部 -->
+        <footer class="footer">
+            <p>💚 由 Perplexity Pro 為電子零售量身打造 | 適合 50-600 人規模門市</p>
+            <p>支援多分店同步 | 數據安全 localStorage 儲存</p>
+        </footer>
+    </div>
+
+    <script>
+        // 平滑滾動
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({ behavior: 'smooth' });
+            });
+        });
+    </script>
+</body>
+</html>
